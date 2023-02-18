@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Image Rotator Results</title>
+  </head>
+  <body>
+    <h1>Image Rotator Results</h1>
+    <h2>Original Image</h2>
+    <img src="data:image/jpeg;base64, {{ original | safe }}" alt="Original Image">
+    <h2>Rotated Images</h2>
+    <div class="image-grid">
+        <div class="grid-row">
+            <div class="grid-item">
+                <img src="data:image/jpeg;base64, {{ img_0 | safe }}" alt="Rotated 90 Degrees">
+            </div>
+         </div>
+        <div class="grid-item">
+          <img src="data:image/jpeg;base64, {{ img_1 | safe }}" alt="Rotated 180 Degrees">
+        </div>
+      </div>
+      <div class="grid-row">
+        <div class="grid-item">
+            <img src="data:image/jpeg;base64, {{ img_2 | safe }}" alt="Rotated 270 Degrees">
+        </div>
+      </div>
+        <div class="grid-item">
+            <img src="data:image/jpeg;base64, {{ img_3 | safe }}" alt="Rotated 360 Degrees">
+        </div>
+        <div class="grid-item">
+          <img src="data:image/jpeg;base64, {{ img_4 | safe }}" alt="Rotated 360 Degrees">
+      </div>
+      </div>
+    </div>
+    </div>
+
+</html>   
