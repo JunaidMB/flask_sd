@@ -91,7 +91,7 @@ def index():
 def generate_image():
     
     # Get Prompt
-    prompt = request.form['prompt-input']
+    #prompt = request.form['prompt-input']
     
     # get uploaded file
     uploaded_file = request.files['file']
@@ -101,7 +101,7 @@ def generate_image():
     
     returned_imgs = multiple_rounds_img2img(
     init_image = img,
-    prompt = prompt,
+    prompt = "a stuffed brown meerkat dressed in a zebra suit, cartoon, Pixar, Disney character, 3D render, modern disney style",
     negative_prompt = "disfigured, misaligned, ugly, blurry, grumpy, grey, dark, big eyes, person, human, fuzzy, furry",
     strength_array = [0.7, 0.6, 0.5, 0.4],
     guidance_array = [20.0, 18.0, 16.0, 14.0],
