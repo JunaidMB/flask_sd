@@ -214,4 +214,4 @@ def generate_image_direct():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
