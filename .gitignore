@@ -1,2 +1,6 @@
 .DS_Store
 app.py
+request.py
+queue_image_generator.py
+__pycache__
+sample.txt

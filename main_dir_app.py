@@ -1,3 +1,4 @@
+import json
 from flask import Flask, jsonify, make_response, render_template, request, send_file
 from itsdangerous import base64_encode
 from jinja2 import Environment
@@ -11,19 +12,22 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 import glob 
 from typing import Optional, List, Union
-#from flask_ngrok import run_with_ngrok
-import redis
-from redis import Redis
-from rq import Queue
-from rq.job import Job
+from flask_ngrok import run_with_ngrok
+# import redis
+# from redis import Redis
+# from rq import Queue
+# from rq.job import Job
+# from queue_image_generator import *
 
 # Connect to Redis instance
-r = redis.Redis()
-q = Queue(connection = r)
+# r = Redis(host='localhost', port=6379)
+# q = Queue('high', connection = r)
 ## Run redis-server in terminal
 ## Run rq worker in terminal
 
-# Load Function
+# Load model
+img2imgpipe = StableDiffusionImg2ImgPipeline.from_pretrained("nitrosocke/mo-di-diffusion")
+
 def multiple_rounds_img2img(
   init_image: Image,
   prompt: str,  
@@ -82,39 +86,6 @@ def multiple_rounds_img2img(
                             negative_prompt = negative_prompt)
 
     return img2imgpipeline_final.images
-
-
-# Load model
-img2imgpipe = StableDiffusionImg2ImgPipeline.from_pretrained("nitrosocke/mo-di-diffusion", torch_dtype=torch.float16)
-#img2imgpipe.to("cuda")
-
-def queue_image_generator(initial_image_str: str, prompt: str, negative_prompt: str, final_images_to_return: int = 1, seed: int = 123):
-    
-    # Load the image data into a PIL Image object
-    img = Image.open(io.BytesIO(initial_image_str))
-    
-    returned_imgs = multiple_rounds_img2img(
-    init_image = img,
-    prompt = prompt,
-    negative_prompt = negative_prompt,
-    strength_array = [0.7],
-    guidance_array = [20.0],
-    final_images_to_return = final_images_to_return,
-    num_rounds = 1,
-    seed = seed)
-
-    # Convert generated image to bytestring
-    buffered = io.BytesIO()
-    returned_imgs[0].save(buffered, format = "JPEG")
-    returned_imgs_data = buffered.getvalue()
-    returned_imgs_b64 = base64.b64encode(returned_imgs_data).decode('utf-8')
-
-    response_data = {"generated_image": returned_imgs_b64}
-
-    json_response = jsonify(response_data)
-
-    return json_response
-
 
 # Set flask app and set to ngrok
 app = Flask(__name__)
@@ -188,45 +159,58 @@ def generate_image():
                            )
 
 
-
-
-
-
-@app.route('/generate_image_rest', methods=['POST'])
-def generate_image_rest():
-
-    if request.is_json:
-        
-        # Get the JSON data from the POST request
-        data = request.json
-
-        # Get the base64-encoded image data and decode it
-        image_b64 = data.get('initial_image', '')
-        image_data = base64.b64decode(image_b64)
-
-        # Get parameters
-        prompt = data.get('prompt', '')
-        negative_prompt = data.get('negative', '')
-        final_images_to_return = int(data.get('final_images_to_return', ''))
-        seed = int(data.get('seed', ''))
-        
-        task = q.enqueue(queue_image_generator, image_data, prompt, negative_prompt, final_images_to_return, seed)
-        # return the task ID to the client
-        return jsonify({'task_id': task.id})
+@app.route('/generate_image_rest_direct', methods=["POST"])
+def generate_image_direct():
     
-    else: 
-        
-        return make_response(jsonify({"message": "No JSON received"}), 400)
+    # Get the JSON data from the POST request
+    data = request.json
 
+    # Get the base64-encoded image data and decode it
+    image_b64 = data.get('initial_image', '')
+    
 
+    # Get parameters
+    prompt = data.get('prompt', '')
+    negative_prompt = data.get('negative', '')
+    final_images_to_return = int(data.get('final_images_to_return', ''))
+    seed = int(data.get('seed', ''))
 
-@app.route('/get_result/<task_id>')
-def get_result(task_id):
-    task = q.fetch_job(task_id)
-    if task.is_finished:
-        return jsonify(task.result)
-    else:
-        return jsonify({'status': 'in progress'})
+    print(prompt)
+    print(negative_prompt)
+    print(final_images_to_return)
+    print(seed)
+    
+    # Load the image data into a PIL Image object
+    image_data = base64.b64decode(image_b64)
+    img = Image.open(io.BytesIO(image_data))
+   
+    print(type(img))
+    
+    returned_imgs = multiple_rounds_img2img(
+    init_image = img,
+    prompt = prompt,
+    negative_prompt = negative_prompt,
+    strength_array = [0.7, 0.6],
+    guidance_array = [20.0, 18],
+    final_images_to_return = final_images_to_return,
+    num_rounds = 2,
+    seed = seed)
+
+    print(returned_imgs)
+    print(type(returned_imgs))
+
+    # Convert generated image to bytestring
+    buffered = io.BytesIO()
+    returned_imgs[0].save(buffered, format = "PNG")
+    returned_imgs_data = buffered.getvalue()
+    returned_imgs_b64 = base64.b64encode(returned_imgs_data).decode('utf-8')
+
+    response_data = {"generated_image": returned_imgs_b64}
+
+    json_response = jsonify(response_data)
+
+    return json_response
+    
 
 
 if __name__ == '__main__':
