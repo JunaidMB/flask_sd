@@ -26,7 +26,8 @@ from flask_ngrok import run_with_ngrok
 ## Run rq worker in terminal
 
 # Load model
-img2imgpipe = StableDiffusionImg2ImgPipeline.from_pretrained("nitrosocke/mo-di-diffusion")
+img2imgpipe = StableDiffusionImg2ImgPipeline.from_pretrained("nitrosocke/mo-di-diffusion", torch_dtype=torch.float16)
+img2imgpipe.to("cuda")
 
 def multiple_rounds_img2img(
   init_image: Image,
